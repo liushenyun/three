@@ -1,0 +1,318 @@
+<template>
+  <div calss="push-remind-outer">
+    <div class="dt-search-top">
+      <div class="dt-search-cell">
+        <button type="button" class="dt-btn dt-btn-add" @click="topAddActive">新 增</button>
+      </div>
+    </div>
+
+    <!-- 表格 start -->
+      <div class="dt-table-outer">
+        <div class="dt-table-true-wrap">
+          <table class="dt-table-same" cellspacing="0" cellpadding="0">
+                <thead>
+                  <tr>
+                    <th>模板名称</th>
+                    <th>信息类型</th>
+                    <th class="tw-handle-edit2">操作</th>
+                  </tr>
+                </thead>
+              <tbody>
+                <tr v-for="(item,index) in listArr" :key="index">
+                  <td>{{item.name}}</td>
+                  <td>{{item.msg_type|FilterMsgTemplateType}}</td>
+                  <td class="dt-table-edit"><b @click="tableEditActive(item)">编 辑</b><b @click="tableDeleteActive(item)" class="dt-table-detele">删 除</b></td>
+                </tr>
+              </tbody>
+          </table>
+          <div class="no-data-tip" v-if="!listArr.length">暂无数据</div>
+        </div>
+        <div class="dt-page-wrap">
+          <el-pagination class="dt-page-reset" :page-size="10"  @current-change="paginationChangeActive" :current-page.sync="currentPage" layout="total, prev, pager, next, jumper" :total="listTotal">
+          </el-pagination>
+        </div>
+      </div>
+      <!-- 表格 end -->
+
+      <!-- 侧滑start -->
+      <dt-slide-page :slideTitle='slideTopTilte' :class="{'slide-page-show': slideShow}" @hideSlidePage='slideShow = false' :slideWidth='SlidePageConfig.slideWidthA'>
+        <ul>
+          <!-- 模板名称 -->
+          <li>
+            <dt-search-input  ref="templateNameSlideRef" :inputWidth='SlidePageConfig.inputWidthA' :title="$SearchInputConfig.templateName.title" :placeholder ='$SearchInputConfig.templateName.placeholder' :maxLength = '$SearchInputConfig.templateName.length'  defaultValue = ''></dt-search-input>
+          </li>
+
+          <!-- 信息类型 -->
+          <li>
+            <dt-select-option @selectValueChange = 'selectValueChange' ref='msgTypeSlideRef' :conWidth = 'SlidePageConfig.inputWidthA' :optiosTitle='$ElSelectName.templateInformType.title' :optionsName ='$ElSelectName.templateInformType.name'></dt-select-option>
+          </li>
+
+          <!-- 信息标题 -->
+          <li>
+            <dt-search-input  ref="infoTitleSlideRef" :inputWidth='SlidePageConfig.inputWidthA' :title="$SearchInputConfig.infoTitle.title" :placeholder ='$SearchInputConfig.infoTitle.placeholder' :maxLength = '$SearchInputConfig.infoTitle.length'  defaultValue = ''></dt-search-input>
+          </li>
+          
+          <!-- 推送渠道 -->
+          <li>
+            <dt-select-option ref='pushChannelSlideRef' :conWidth = 'SlidePageConfig.inputWidthA' :optiosTitle='$ElSelectName.templatePushChannel.title' :optionsName ='$ElSelectName.templatePushChannel.name'></dt-select-option>
+          </li>
+
+          <!-- 推送类型 -->
+          <li v-if="informTypeValue == 1">
+            <dt-select-option ref='pushTypeSlideRef' :conWidth = 'SlidePageConfig.inputWidthA' :optiosTitle='$ElSelectName.templatePushType.title' :optionsName ='$ElSelectName.templatePushType.name'></dt-select-option>
+          </li>
+
+          <!-- 触发规则 -->
+          <li  v-if="informTypeValue == 1" class="template-send-rule">
+            <div class="rule-wrap">
+              <i>规则触发：</i>
+              <span>
+                <p><b @click="filterRuleActiveIndex = 1" :class="{'rule-active': filterRuleActiveIndex == 1}">滤芯剩余百分百</b><b><em>少于</em><input v-model="triggerValue.value1" class="dt-input" type="text" placeholder="请输入整数1~10"> <em>天</em></b></p>
+                <p><b @click="filterRuleActiveIndex = 2" :class="{'rule-active': filterRuleActiveIndex == 2}">滤芯剩余天数</b><b><em>少于</em><input v-model="triggerValue.value2" class="dt-input" type="text" placeholder="请输入整数"> <em>天</em></b></p>
+                <p><b @click="filterRuleActiveIndex = 3" :class="{'rule-active': filterRuleActiveIndex == 3}">滤芯剩余流量</b><b><em>少于</em><input v-model="triggerValue.value3" class="dt-input" type="text" placeholder="请输入整数"> <em>天</em></b></p>
+              </span>
+            </div>
+          </li>
+
+          <!-- 信息内容 -->
+          <li>
+            <dt-search-textarea  ref="msgConSlideRef" inputHeight = '96' :inputWidth='SlidePageConfig.inputWidthA' :title="$SearchInputConfig.templateInformCon.title" :placeholder ='$SearchInputConfig.templateInformCon.placeholder' :maxLength = '$SearchInputConfig.templateInformCon.length'  defaultValue = ''></dt-search-textarea>
+          </li>
+
+          
+
+          <!-- 信息链接 -->
+          <li>
+            <dt-search-input  ref="msgLinkSlideRef" :inputWidth='SlidePageConfig.inputWidthA' :title="$SearchInputConfig.templateInfoLink.title" :placeholder ='$SearchInputConfig.templateInfoLink.placeholder' :maxLength = '$SearchInputConfig.templateInfoLink.length'  defaultValue = ''></dt-search-input>
+          </li>
+        </ul>
+
+        <div class="slide-btn-wrap">
+          <button class="dt-btn" @click="slideSureActive">确定</button>
+          <button class="dt-btn dt-btn-cancel" @click="slideCancelActive">取消</button>
+        </div>
+      </dt-slide-page>
+      <!-- 侧滑 end -->
+
+  </div>
+</template>
+
+<script>
+import { dtSlidePage, dtSearchTextarea } from '../../global/searchComponents';
+import { SlidePageConfig } from "../../global/constant.js";
+import { paginationChangeActive } from "../../global/mixin.js";
+export default {
+  mixins: [paginationChangeActive],
+  data() {
+    return {
+      SlidePageConfig,
+      currentPage: 1,
+      prePage: 1,
+      isEditSlideFlag: false,
+      slideShow: false,
+      pageNumber: 1,
+      listArr: [],
+      listTotal: 0,
+      slideSubmitId: 0,
+      slideTopTilte: '新增模板',
+      filterRuleActiveIndex: 1,
+      pushInfoType: 1,
+      informTypeValue: 1,
+      triggerValue: {
+        value1: '',
+        value2: '',
+        value3: ''
+      }
+    }
+  },
+  mounted() {
+    this.getMainList(this.getUrlData())
+  },
+  methods: {
+    getMainList(params) {
+      this.$http.msgTemplateGetList(params, msg => {
+        let _msg = msg.data;
+        this.listArr = _msg.list;
+        this.currentPage = this.pageNumber;
+        this.listTotal = Number(_msg.total);
+      });
+    },
+    topAddActive() {
+      this.slideTopTilte = '新增模板';
+      this.slideShow = true;
+      this.slideSubmitId = 0;
+      this.filterRuleActiveIndex = 1;
+      this.informTypeValue = 1;
+      this.triggerValue = {
+        value1: '',
+        value2: '',
+        value3: ''
+      };
+      this.setRefsEmpty();
+    },
+    tableEditActive(item) {
+      this.slideTopTilte = '编辑模板';
+      let _info = item;
+      this.slideShow = true;
+      this.slideSubmitId = _info.id;
+      this.getItemDetail(this.slideSubmitId);
+    },
+    tableDeleteActive(info) {
+      this.$projectUtils.ConfirmTip('确定删除模板', msg => {
+        if (msg === 'confirm') {
+          this.$http.msgTemplateDel(info.id, msg => {
+            this.getMainList(this.getUrlData());
+          })
+        }
+      })
+    },
+    slideSureActive() {
+      let _refs = this.getRefs();
+      let _urlData = {
+        'id': this.slideSubmitId,
+        'msg_type': _refs.msg_type,
+        'name': _refs.name,
+        'title': _refs.title,
+        'content': _refs.content,
+        'channel': _refs.channel,
+        'url': _refs.url
+      };
+      if (Number(this.informTypeValue) === 1) {
+        _urlData.push_type = this.$refs.pushTypeSlideRef.value;
+        _urlData.trigger_type = this.filterRuleActiveIndex;
+        _urlData.trigger_value = this.triggerValue[`value${this.filterRuleActiveIndex}`];
+        if (Number(this.filterRuleActiveIndex) === 1) {
+          if (Number(_urlData.trigger_value) >= 1 && Number(_urlData.trigger_value) <= 10) {
+          } else {
+            this.$message.warning('只能输入1-10的整数');
+            return;
+          }
+        }
+      };
+      console.log(185, _urlData);
+      if (Number(this.slideSubmitId)) {
+        this.$http.msgTemplateEdit(_urlData, msg => {
+          this.slideShow = false;
+          this.pageNumber = 1;
+          this.getMainList(this.getUrlData());
+        });
+      } else {
+        this.$http.msgTemplateAdd(_urlData, msg => {
+          this.slideShow = false;
+          this.pageNumber = 1;
+          this.getMainList(this.getUrlData());
+        });
+      }
+    },
+    slideCancelActive() {
+      this.slideShow = false;
+    },
+    // 组件内工具函数
+    getUrlData() { // 获取列表方法
+      return {
+        'page': this.pageNumber
+      }
+    },
+    getItemDetail(id) {
+      this.$http.msgTemplateGetDetail(id, msg => {
+        this.editSlide(msg.data);
+      });
+    },
+    setRefsEmpty() {
+      this.$refs.templateNameSlideRef.value = '';
+      this.$refs.infoTitleSlideRef.value = '';
+      this.$refs.msgTypeSlideRef.value = '1';
+      this.$refs.msgConSlideRef.value = '';
+      this.$refs.msgLinkSlideRef.value = '';
+    },
+    getRefs() {
+      let _refsValue = {
+        'msg_type': this.$refs.msgTypeSlideRef.value,
+        'name': this.$refs.templateNameSlideRef.value,
+        'title': this.$refs.infoTitleSlideRef.value,
+        'content': this.$refs.msgConSlideRef.value,
+        'url': this.$refs.msgLinkSlideRef.value,
+        'channel': this.$refs.pushChannelSlideRef.value
+      };
+      return _refsValue;
+    },
+    editSlide(msg) {
+      let _msg = msg;
+      console.log(235, _msg);
+      // input 赋值
+      this.$refs.templateNameSlideRef.value = _msg.name;
+      this.$refs.infoTitleSlideRef.value = _msg.title;
+      this.$refs.msgTypeSlideRef.value = _msg.msg_type;
+      this.$refs.msgConSlideRef.value = _msg.content;
+      this.$refs.msgLinkSlideRef.value = _msg.url;
+      this.triggerValue = {
+        value1: '',
+        value2: '',
+        value3: ''
+      }
+      if (Number(_msg.msg_type) === 1) {
+        this.$refs.pushChannelSlideRef.value = _msg.channel;
+        this.informTypeValue = Number(_msg.msg_type);
+        this.filterRuleActiveIndex = Number(_msg.trigger_type);
+        this.triggerValue[`value${_msg.trigger_type}`] = Number(_msg.trigger_value);
+      }
+    },
+    selectValueChange(value) {
+      this.informTypeValue = value;
+      console.log('223', value);
+    }
+  },
+  components: {
+    dtSearchTextarea,
+    dtSlidePage
+  },
+  watch: {
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.tw-handle-edit2{
+  width: 150px;
+}
+.template-send-rule{
+  .rule-wrap{
+    display: flex;
+    height: 110px;
+    i{
+      display: inline-block;
+      line-height: 30px;
+    }
+    span{
+      height: auto;
+      width: 400px;
+      p{
+        height: 30px;
+        line-height: 30px;
+        margin-bottom: 8px;
+        display: flex;
+        b:nth-of-type(1){
+          width: 120px;
+          cursor: pointer;
+          vertical-align: top;
+          padding-left: 22px;
+          background: url("../../statics/img/icon_danxuan_off.png") no-repeat left center/ 14px auto;
+          &.rule-active{
+            background: url("../../statics/img/icon_danxuan_on.png") no-repeat left center/ 14px auto;
+          }
+        }
+        b:nth-of-type(2){
+          flex: 1;
+          text-align: right;
+          input{
+            width: 120px;
+            margin: 0 4px;
+          }
+        }
+      }
+    }
+  }
+  
+}
+</style>
+
