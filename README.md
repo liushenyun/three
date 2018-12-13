@@ -1,4 +1,4 @@
-万福净水（PC管理后台）
+three
 ====================
 
 ## 技术栈
@@ -266,9 +266,7 @@ import { provinceAndCityData, regionData, provinceAndCityDataPlus, regionDataPlu
 - 组件内的功能函数放在下面
 - paginationChangeActive  翻页方法
 
-### 账号
-1、lsy 13828758660
-1、lsy2 13828758660
+
 
 
 **修改：2018-03-01 周六**

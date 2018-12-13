@@ -14,6 +14,11 @@ import ElSelectName from './global/ElSelectName';
 import SearchInputConfig from './global/SearchInputConfig';
 Vue.use(ElSelectName);
 Vue.use(SearchInputConfig);
+
+// ### 账号
+// 1、lsy 13828758660
+// 1、lsy2 13828758660
+
 // Vue.component(DtButton.name, DtButton)
 Vue.use(Button);
 Vue.use(SearchInput);
